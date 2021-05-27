@@ -1,11 +1,9 @@
-from argparse import ArgumentParser, ArgumentTypeError, Namespace
+from argument_parser import parse_arguments
 import torch.nn as nn
+import numpy as np
+import torch
 import sys
 
-class DataLoader:
-    def __init__(self):
-        super(DataLoader, self).__init__()
-        # TODO
 
 class Time2Vector:
     def __init__(self, seq_len, **kwargs):
@@ -23,15 +21,15 @@ class Time2Vector:
         :return:
         """
         # TODO
-        x = torch.mean(x[:,:,0:4], dim=-1)
+        x = torch.mean(x[:, :, 0:4], dim=-1)
         time_nonperiodic = x * self.weights_nonperiodic + self.bias_nonperiodic
-        time_nonperiodic = np.expand_dims(time_nonperiodic, axis = -1)
+        time_nonperiodic = np.expand_dims(time_nonperiodic, axis=-1)
 
         time_periodic = torch.sin(x * self.weights_periodic + self.bias_periodic)
-        time_periodic = np.expand_dims(time_periodic, axis = -1)
+        time_periodic = np.expand_dims(time_periodic, axis=-1)
 
-        return np.concatenate([time_nonperiodic, time_periodic], axis= -1)
-        
+        return np.concatenate([time_nonperiodic, time_periodic], axis=-1)
+
 
 class SingleHeadAttention(nn.Module):
     def __init__(self, d_k, d_v, attribute=7):
@@ -43,7 +41,7 @@ class SingleHeadAttention(nn.Module):
         self.key = nn.Linear(attribute, self.d_k)
         self.value = nn.Linear(attribute, self.d_v)
 
-    def forward(self, x): #x=[q,k,v]
+    def forward(self, x):  # x=[q,k,v]
         """
         Forward propagation
         :return:
@@ -57,8 +55,9 @@ class SingleHeadAttention(nn.Module):
         for w in attn_weights:
             w /= np.sqrt(self.d_k)
         attn_weights = nn.Softmax(attn_weights, dim=-1)
-        out = np.matmul(attn_weights, v) 
+        out = np.matmul(attn_weights, v)
         return out
+
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, d_k, d_v, n_heads, attribute=288):
@@ -147,30 +146,6 @@ def debug_log(log: str) -> None:
     if verbosity > 1:
         print(f'[\033[93mDEBUG\033[00m] {log}')
         sys.stdout.flush()
-
-
-def check_verbosity_type(input_value: str) -> int:
-    """
-    Check whether verbosity is true or false
-    :param input_value: input string value
-    :return: integer value
-    """
-    int_value = int(input_value)
-    if int_value != 0 and int_value != 1 and int_value != 2:
-        raise ArgumentTypeError(f'Verbosity should be 0, 1 or 2.')
-    return int_value
-
-
-def parse_arguments() -> Namespace:
-    """
-    Parse arguments
-    :return: arguments
-    """
-    parser = ArgumentParser(description='DLP project: Stock Prediction using Transformer')
-
-    parser.add_argument('-v', '--verbosity', default=0, type=check_verbosity_type, help='Verbosity level')
-
-    return parser.parse_args()
 
 
 def main() -> None:
