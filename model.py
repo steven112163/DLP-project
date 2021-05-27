@@ -121,7 +121,7 @@ class Network(nn.Module):
     def __init__(self,
                  batch_size: int,
                  seq_len: int,
-                 num_encoder: int,
+                 num_encoders: int,
                  attn_dim: int,
                  num_heads: int,
                  dropout_rate: float,
@@ -139,7 +139,7 @@ class Network(nn.Module):
                                attn_dim=attn_dim,
                                num_heads=num_heads,
                                dropout_rate=dropout_rate,
-                               hidden_size=hidden_size) for _ in range(num_encoder)
+                               hidden_size=hidden_size) for _ in range(num_encoders)
         ]
         self.encoder = nn.Sequential(*self.encoder)
 
