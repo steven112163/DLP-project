@@ -105,16 +105,17 @@ class TransformerEncoder(nn.Module):
 
         self.layer_normalization = nn.LayerNorm(normalized_shape=[batch_size, seq_len, 7])
 
-    def forward(self, inputs: Tuple[torch.Tensor, ...]) -> torch.Tensor:
+    def forward(self, inputs: Tuple[torch.Tensor, ...]) -> Tuple[torch.Tensor, ...]:
         """
         Forward propagation
         :param inputs: (query, key, value), each dimension is [batch_size, seq_len, 7]
-        :return: embedding [batch_size, seq_len, 7]
+        :return: three embeddings with each size [batch_size, seq_len, 7]
         """
         query = inputs[0]
         partial_results = self.first(inputs)
         partial_results = self.second(query + partial_results)
-        return self.layer_normalization(query + partial_results)
+        outputs = self.layer_normalization(query + partial_results)
+        return outputs, outputs, outputs
 
 
 class Network(nn.Module):
@@ -155,7 +156,7 @@ class Network(nn.Module):
                       out_features=1)
         )
 
-    def forward(self, inputs: Tuple[torch.Tensor, ...]) -> torch.Tensor:
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         """
         Forward propagation
         :param inputs: stock price [batch_size, seq_len, 5]
@@ -163,7 +164,7 @@ class Network(nn.Module):
         """
         time_embedding = self.time_embedding(inputs)
         embedded_inputs = torch.cat([inputs, time_embedding], dim=-1)
-        embedded_inputs = self.encoder((embedded_inputs for _ in range(3)))
+        embedded_inputs, _, _ = self.encoder((embedded_inputs, embedded_inputs, embedded_inputs))
         embedded_inputs = self.average(embedded_inputs)
         embedded_inputs = embedded_inputs.view(self.batch_size, self.seq_len)
         return self.net(embedded_inputs)
