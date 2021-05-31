@@ -4,6 +4,14 @@
 
 
 
+## Dataset
+Download data from [dataset](https://www.kaggle.com/jacksoncrow/stock-market-dataset).  
+```shell
+kaggle datasets download -d jacksoncrow/stock-market-dataset
+```
+
+
+
 ## Arguments
 |Argument|Description|Option|Default|
 |---|---|---|---|
@@ -15,4 +23,5 @@
 |`'-nh', '--num_heads'`|Number of heads for multi-attention|int|12|
 |`'-d', '--dropout_rate'`|Dropout rate|float|0.1|
 |`'-hs', '--hidden_size'`|Hidden size between the linear layers in the network|int|256|
+|`'-r', '--root_dir'`|Directory containing the downloaded data|str|'archive'|
 |`'-v', '--verbosity'`|Verbosity level|0-2|0|

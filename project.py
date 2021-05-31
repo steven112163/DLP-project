@@ -1,5 +1,6 @@
 from argument_parser import parse_arguments
 from model import Network
+from data_converter import generate_train_and_test
 from data_loader import DataLoader
 import torch.nn as nn
 import torch
@@ -77,6 +78,10 @@ def main() -> None:
                     num_heads=args.num_heads,
                     dropout_rate=args.dropout_rate,
                     hidden_size=args.hidden_size).to(training_device)
+
+    # Generate data first
+    info_log('Generate training and testing data from archive ...')
+    generate_train_and_test(root_dir=args.root_dir)
 
 
 if __name__ == '__main__':
