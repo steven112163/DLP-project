@@ -52,9 +52,27 @@ def generate_train_and_test(root_dir: str) -> None:
             exists_symbols.append(symbol)
 
             stock.sort_values('Date', inplace=True)
+
+            stock['Open'] = stock['Open'].pct_change()
+            stock['High'] = stock['High'].pct_change()
+            stock['Low'] = stock['Low'].pct_change()
+            stock['Close'] = stock['Close'].pct_change()
+            stock['Volume'] = stock['Volume'].pct_change()
+
+            min_value = min(stock[['Open', 'High', 'Low', 'Close', 'Volume']].min(axis=0))
+            max_value = max(stock[['Open', 'High', 'Low', 'Close', 'Volume']].max(axis=0))
+
+            stock['Open'] = (stock['Open'] - min_value)/(max_value - min_value)
+            stock['High'] = (stock['High'] - min_value)/(max_value - min_value)
+            stock['Low'] = (stock['Low'] - min_value)/(max_value - min_value)
+            stock['Close'] = (stock['Close'] - min_value)/(max_value - min_value)
+            
+            min_volume = min(stock[['Volume']].min(axis=0))
+            max_volume = max(stock[['Volume']].max(axis=0))
+            stock['Volume'] = (stock['Volume'] - min_volume)/(max_volume - min_volume)
             stock.dropna(how='any', axis=0, inplace=True)
             stock.replace(to_replace=0, method='ffill', inplace=True)
-
+                    
             last_20_percent = -int(0.2 * len(stock))
 
             stock_train = stock.iloc[:last_20_percent, :].copy()
