@@ -1,16 +1,4 @@
-from argparse import ArgumentParser, ArgumentTypeError, Namespace
-
-
-def check_verbosity_type(input_value: str) -> int:
-    """
-    Check whether verbosity is true or false
-    :param input_value: input string value
-    :return: integer value
-    """
-    int_value = int(input_value)
-    if int_value != 0 and int_value != 1 and int_value != 2:
-        raise ArgumentTypeError(f'Verbosity should be 0, 1 or 2.')
-    return int_value
+from argparse import ArgumentParser, Namespace
 
 
 def parse_arguments() -> Namespace:
@@ -21,6 +9,8 @@ def parse_arguments() -> Namespace:
     parser = ArgumentParser(description='DLP project: Stock Prediction using Transformer')
 
     parser.add_argument('-e', '--epochs', default=100, type=int, help='Number of epochs')
+    parser.add_argument('-w', '--warmup', default=10, type=int, help='Number of epochs for warmup')
+    parser.add_argument('-l', '--learning_rate', default=0.001, type=int, help='Learning rate')
     parser.add_argument('-b', '--batch_size', default=32, type=int, help='Batch size')
     parser.add_argument('-s', '--seq_len', default=128, type=int, help='Sequence length (consecutive days)')
     parser.add_argument('-ne', '--num_encoders', default=3, type=int,
@@ -32,6 +22,6 @@ def parse_arguments() -> Namespace:
                         help='Hidden size between the linear layers in the network')
     parser.add_argument('-r', '--root_dir', default='archive', type=str,
                         help='Directory containing the downloaded data')
-    parser.add_argument('-v', '--verbosity', default=0, type=check_verbosity_type, help='Verbosity level')
+    parser.add_argument('-v', '--verbosity', default=0, type=int, choices=[0, 1, 2], help='Verbosity level')
 
     return parser.parse_args()

@@ -16,6 +16,8 @@ kaggle datasets download -d jacksoncrow/stock-market-dataset
 |Argument|Description|Option|Default|
 |---|---|---|---|
 |`'-e', '--epochs'`|Number of epochs|int|100|
+|`'-w', '--warmup'`|Number of epochs for warmup|int|10|
+|`'-l', '--learning_rate'`|Learning rate|float|0.001|
 |`'-b', '--batch_size'`|Batch size|int|32|
 |`'-s', '--seq_len'`|Sequence length (consecutive days)|int|128|
 |`'-ne', '--num_encoder'`|Number of transformer encoder in the network|int|3|

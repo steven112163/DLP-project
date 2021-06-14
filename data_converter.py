@@ -3,6 +3,11 @@ import os
 
 
 def generate_train_and_test(root_dir: str) -> None:
+    """
+    Preprocess data to generate training and testing data
+    :param root_dir: Directory containing raw data
+    :return: None
+    """
     if not os.path.exists('data'):
         os.makedirs('data/train')
         os.makedirs('data/test')
@@ -59,8 +64,11 @@ def generate_train_and_test(root_dir: str) -> None:
             stock['Close'] = stock['Close'].pct_change()
             stock['Volume'] = stock['Volume'].pct_change()
 
-            min_value = min(stock[['Open', 'High', 'Low', 'Close', 'Volume']].min(axis=0))
-            max_value = max(stock[['Open', 'High', 'Low', 'Close', 'Volume']].max(axis=0))
+            stock.dropna(how='any', axis=0, inplace=True)
+            stock.replace(to_replace=0, method='ffill', inplace=True)
+
+            min_value = min(stock[['Open', 'High', 'Low', 'Close']].min(axis=0))
+            max_value = max(stock[['Open', 'High', 'Low', 'Close']].max(axis=0))
 
             stock['Open'] = (stock['Open'] - min_value)/(max_value - min_value)
             stock['High'] = (stock['High'] - min_value)/(max_value - min_value)
@@ -70,8 +78,6 @@ def generate_train_and_test(root_dir: str) -> None:
             min_volume = min(stock[['Volume']].min(axis=0))
             max_volume = max(stock[['Volume']].max(axis=0))
             stock['Volume'] = (stock['Volume'] - min_volume)/(max_volume - min_volume)
-            stock.dropna(how='any', axis=0, inplace=True)
-            stock.replace(to_replace=0, method='ffill', inplace=True)
                     
             last_20_percent = -int(0.2 * len(stock))
 
