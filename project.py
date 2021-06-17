@@ -108,7 +108,8 @@ def train(model: Network,
             total_loss += loss.item()
             num_batch += 1
 
-            debug_log(f'[{epoch + 1}/{args.epochs}][{batch_idx + 1}/{len(stock_loader)}]   Loss: {loss.item()}')
+            if batch_idx % 20 == 0:
+                debug_log(f'[{epoch + 1}/{args.epochs}][{batch_idx + 1}/{len(stock_loader)}]   Loss: {loss.item()}')
 
     return total_loss / num_batch
 
