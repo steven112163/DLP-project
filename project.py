@@ -53,11 +53,17 @@ def train_and_evaluate(model: Network,
         # Test
         info_log('Start testing')
         # TODO: need to test and store the best model according to min_test_loss
-        # avg_loss = test()
-        # if avg_loss < min_test_loss:
-        #     min_test_loss = avg_loss
-        #     checkpoint = {'network':model.state_dict()}
-        #     torch.save(checkpoint, f'models/network_{epoch}_{avg_loss:.4f}.pt')
+        avg_loss = test(model=model,
+                        data_loader=train_loader,
+                        loss_fn=loss_fn,
+                        args=args,
+                        training_device=training_device)
+        test_losses[epoch] = avg_loss
+
+        if avg_loss < min_test_loss:
+            min_test_loss = avg_loss
+            checkpoint = {'network':model.state_dict()}
+            torch.save(checkpoint, f'models/network_{epoch}_{avg_loss:.4f}.pt')
 
         # Plot
         info_log('Plot losses')
@@ -116,6 +122,7 @@ def train(model: Network,
 
 def test(model: Network,
          data_loader: StockDataloader,
+         loss_fn: nn,
          args: Namespace,
          training_device: torch.device) -> float:
     """
@@ -127,6 +134,23 @@ def test(model: Network,
     :return: Mean testing loss
     """
     model.eval()
+    total_loss, num_batch = 0.0, 0
+    for symbol, stock_loader in data_loader:
+        info_log(f"Start testing stock '{symbol}'")
+        for batch_idx, batched_data in enumerate(stock_loader):
+            # Get data
+            sequence, close = batched_data
+            sequence = sequence.to(training_device).type(torch.float)
+            close = close.to(training_device).type(torch.float).view(-1, 1)
+
+            # Forward and compute loss
+            outputs = model.forward(inputs=sequence, symbol=symbol)
+            loss = loss_fn(outputs, close)
+
+            total_loss += loss.item()
+            num_batch += 1
+
+    return total_loss / num_batch
     # TODO
 
 
