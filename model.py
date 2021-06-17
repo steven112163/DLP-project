@@ -59,9 +59,10 @@ class MultiHeadAttention(nn.Module):
     def __init__(self, attn_dim: int, num_heads: int):
         super(MultiHeadAttention, self).__init__()
 
-        self.attn_heads = list()
-        for _ in range(num_heads):
-            self.attn_heads.append(SingleHeadAttention(attn_dim=attn_dim))
+        self.num_heads = num_heads
+
+        for idx in range(num_heads):
+            setattr(self, f'attn_{idx}', SingleHeadAttention(attn_dim=attn_dim))
 
         self.linear = nn.Linear(in_features=num_heads * attn_dim, out_features=8)
 
@@ -71,7 +72,7 @@ class MultiHeadAttention(nn.Module):
         :param inputs: (query, key, value), each dimension is [batch_size, seq_len, 8]
         :return: Attention weight [batch_size, seq_len, 8]
         """
-        attn = [head.forward(inputs=inputs) for head in self.attn_heads]
+        attn = [getattr(self, f'attn_{idx}').forward(inputs=inputs) for idx in range(self.num_heads)]
         concat_attn = torch.cat(attn, dim=-1)
         return self.linear(concat_attn)
 
