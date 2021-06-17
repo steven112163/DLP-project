@@ -10,7 +10,7 @@ def parse_arguments() -> Namespace:
 
     parser.add_argument('-e', '--epochs', default=100, type=int, help='Number of epochs')
     parser.add_argument('-w', '--warmup', default=10, type=int, help='Number of epochs for warmup')
-    parser.add_argument('-l', '--learning_rate', default=0.001, type=int, help='Learning rate')
+    parser.add_argument('-l', '--learning_rate', default=0.0001, type=float, help='Learning rate')
     parser.add_argument('-b', '--batch_size', default=32, type=int, help='Batch size')
     parser.add_argument('-s', '--seq_len', default=128, type=int, help='Sequence length (consecutive days)')
     parser.add_argument('-ne', '--num_encoders', default=3, type=int,
