@@ -39,10 +39,10 @@ class StockDataloader:
 
         self.symbols = pd.read_csv(f'data/symbols.csv',
                                    delimiter=',',
-                                   usecols=['Symbol']).values.tolist()
+                                   usecols=['Symbol'])
 
         self.stocks = []
-        for symbol in self.symbols:
+        for symbol in self.symbols['Symbol']:
             dataset = StockDataset(mode=mode, symbol=symbol, seq_len=seq_len)
             if len(dataset) > 0:
                 # Only get the stock with enough length
@@ -61,4 +61,4 @@ class StockDataloader:
         :param index: Index of stocks
         :return: Current stock data loader with its symbol
         """
-        return self.symbols[index], self.stocks[index]
+        return self.symbols['Symbol'][index], self.stocks[index]
