@@ -167,11 +167,10 @@ class Network(nn.Module):
         batch_size, seq_len = inputs.size(0), inputs.size(1)
 
         # Get embedded symbol from symbol string
-        embedded_symbol = torch.zeros((1, seq_len), dtype=torch.float)
+        embedded_symbol = torch.zeros((1, seq_len), dtype=torch.float, device=inputs.device)
         for char in symbol:
             embedded_symbol += self.symbol_embedding(
                 torch.tensor([ord(char) - 97 if char.islower() else ord(char) - 65]))
-        embedded_symbol.to(inputs.device)
 
         # Append embedded symbol to inputs as one feature in the sequence
         symbol_embedding = torch.zeros((batch_size, seq_len), dtype=torch.float, device=inputs.device)
