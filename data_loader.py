@@ -44,8 +44,7 @@ class StockDataloader:
                                    delimiter=',',
                                    usecols=['Symbol'])
         self.stocks = [DataLoader(StockDataset(mode=mode, symbol=symbol, seq_len=seq_len),
-                                  batch_size=batch_size,
-                                  shuffle=True if mode == 'train' else False)
+                                  batch_size=batch_size)
                        for symbol in self.symbols['Symbol']]
 
     def __len__(self) -> int:

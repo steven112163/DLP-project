@@ -4,7 +4,7 @@ from argparse import ArgumentParser, Namespace
 def parse_arguments() -> Namespace:
     """
     Parse arguments
-    :return: arguments
+    :return: Arguments
     """
     parser = ArgumentParser(description='DLP project: Stock Prediction using Transformer')
 

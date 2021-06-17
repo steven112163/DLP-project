@@ -15,8 +15,8 @@ class Time2Vector(nn.Module):
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         """
         Forward propagation
-        :param inputs: stock price [batch_size, seq_len, 5]
-        :return: time feature [batch_size, seq_len, 2]
+        :param inputs: Stock price [batch_size, seq_len, 5]
+        :return: Time feature [batch_size, seq_len, 2]
         """
         x = torch.mean(inputs[:, :, 0:4], dim=-1)
         time_non_periodic = x * self.weights_non_periodic + self.bias_non_periodic
@@ -34,17 +34,17 @@ class SingleHeadAttention(nn.Module):
         # TODO
         self.attn_dim = attn_dim
 
-        self.query = nn.Linear(in_features=7, out_features=self.attn_dim)
-        self.key = nn.Linear(in_features=7, out_features=self.attn_dim)
-        self.value = nn.Linear(in_features=7, out_features=self.attn_dim)
+        self.query = nn.Linear(in_features=8, out_features=self.attn_dim)
+        self.key = nn.Linear(in_features=8, out_features=self.attn_dim)
+        self.value = nn.Linear(in_features=8, out_features=self.attn_dim)
 
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, inputs: Tuple[torch.Tensor, ...]) -> torch.Tensor:
         """
         Forward propagation
-        :param inputs: (query, key, value), each dimension is [batch_size, seq_len, 7]
-        :return: attention weight [batch_size, seq_len, attn_dim]
+        :param inputs: (query, key, value), each dimension is [batch_size, seq_len, 8]
+        :return: Attention weight [batch_size, seq_len, attn_dim]
         """
         q = self.query(inputs[0])
         k = self.key(inputs[1])
@@ -64,13 +64,13 @@ class MultiHeadAttention(nn.Module):
         for _ in range(num_heads):
             self.attn_heads.append(SingleHeadAttention(attn_dim=attn_dim))
 
-        self.linear = nn.Linear(in_features=num_heads * attn_dim, out_features=7)
+        self.linear = nn.Linear(in_features=num_heads * attn_dim, out_features=8)
 
     def forward(self, inputs: Tuple[torch.Tensor, ...]) -> torch.Tensor:
         """
         Forward propagation
-        :param inputs: (query, key, value), each dimension is [batch_size, seq_len, 7]
-        :return: attention weight [batch_size, seq_len, 7]
+        :param inputs: (query, key, value), each dimension is [batch_size, seq_len, 8]
+        :return: Attention weight [batch_size, seq_len, 8]
         """
         attn = [head.forward(inputs=inputs) for head in self.attn_heads]
         concat_attn = torch.cat(attn, dim=-1)
@@ -94,22 +94,22 @@ class TransformerEncoder(nn.Module):
         )
 
         self.second = nn.Sequential(
-            nn.LayerNorm(normalized_shape=[batch_size, seq_len, 7]),
-            nn.Linear(in_features=7,
+            nn.LayerNorm(normalized_shape=[batch_size, seq_len, 8]),
+            nn.Linear(in_features=8,
                       out_features=hidden_size),
             nn.ReLU(inplace=True),
             nn.Linear(in_features=hidden_size,
-                      out_features=7),
+                      out_features=8),
             nn.Dropout(p=dropout_rate)
         )
 
-        self.layer_normalization = nn.LayerNorm(normalized_shape=[batch_size, seq_len, 7])
+        self.layer_normalization = nn.LayerNorm(normalized_shape=[batch_size, seq_len, 8])
 
     def forward(self, inputs: Tuple[torch.Tensor, ...]) -> Tuple[torch.Tensor, ...]:
         """
         Forward propagation
-        :param inputs: (query, key, value), each dimension is [batch_size, seq_len, 7]
-        :return: three embeddings with each size [batch_size, seq_len, 7]
+        :param inputs: (query, key, value), each dimension is [batch_size, seq_len, 8]
+        :return: Three embeddings with each size [batch_size, seq_len, 8]
         """
         query = inputs[0]
         partial_results = self.first(inputs)
@@ -133,6 +133,7 @@ class Network(nn.Module):
         self.seq_len = seq_len
 
         self.time_embedding = Time2Vector(seq_len=seq_len)
+        self.string_embedding = nn.Embedding(num_embeddings=26, embedding_dim=seq_len)
 
         self.encoder = [
             TransformerEncoder(batch_size=batch_size,
@@ -156,14 +157,32 @@ class Network(nn.Module):
                       out_features=1)
         )
 
-    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+    def forward(self, inputs: torch.Tensor, symbol: str) -> torch.Tensor:
         """
         Forward propagation
-        :param inputs: stock price [batch_size, seq_len, 5]
-        :return: prediction
+        :param inputs: Stock price [batch_size, seq_len, 5]
+        :param symbol: Symbol representing the company of the current inputs
+        :return: Prediction
         """
+        batch_size, seq_len = inputs.size(0), inputs.size(1)
+
+        # Get embedded symbol from symbol string
+        embedded_symbol = torch.zeros((1, seq_len), dtype=torch.float)
+        for char in symbol:
+            embedded_symbol += self.string_embedding(
+                torch.tensor([ord(char) - 97 if char.islower() else ord(char) - 65]))
+        embedded_symbol.to(inputs.device)
+
+        # Append embedded symbol to inputs as one feature in the sequence
+        symbol_embedding = torch.zeros((batch_size, seq_len), dtype=torch.float, device=inputs.device)
+        for batch_idx in range(batch_size):
+            symbol_embedding[batch_idx] = embedded_symbol.clone()
+        embedded_inputs = torch.cat([inputs, symbol_embedding.view(batch_size, seq_len, 1)], dim=-1)
+
+        # Get embedded time and append it to the inputs
         time_embedding = self.time_embedding(inputs)
-        embedded_inputs = torch.cat([inputs, time_embedding], dim=-1)
+        embedded_inputs = torch.cat([embedded_inputs, time_embedding], dim=-1)
+
         embedded_inputs, _, _ = self.encoder((embedded_inputs, embedded_inputs, embedded_inputs))
         embedded_inputs = self.average(embedded_inputs)
         embedded_inputs = embedded_inputs.view(self.batch_size, self.seq_len)
