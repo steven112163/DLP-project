@@ -3,8 +3,11 @@ from argparse import Namespace
 from model import Network
 from data_converter import generate_train_and_test
 from data_loader import StockDataloader
-from visualizer import plot_loss
+from visualizer import plot_loss, plot_predicted_results
 from numpy import inf
+from random import sample
+from typing import Dict, List, Tuple
+import pandas as pd
 import torch.optim as optim
 import torch.nn as nn
 import torch
@@ -36,38 +39,54 @@ def train_and_evaluate(model: Network,
     train_losses = [0.0 for _ in range(args.epochs)]
     test_losses = [0.0 for _ in range(args.epochs)]
 
+    # Target company for drawing
+    symbol_csv = pd.read_csv(f'data/symbols.csv',
+                             delimiter=',',
+                             usecols=['Symbol'])
+    symbols = symbol_csv['Symbol'][sample(range(len(train_loader)), 5)].tolist()
+    del symbol_csv
+
     min_test_loss = inf
     for epoch in range(args.epochs):
+        train_predictions = {sym: [] for sym in symbols}
+        test_predictions = {sym: [] for sym in symbols}
+
         # Train
-        info_log('Start training')
-        avg_loss = train(model=model,
-                         data_loader=train_loader,
-                         optimizer=optimizer,
-                         scheduler=scheduler,
-                         loss_fn=loss_fn,
-                         args=args,
-                         epoch=epoch,
-                         training_device=training_device)
+        info_log(f'[{epoch + 1}/{args.epochs}] Start training')
+        avg_loss, train_target_company = train(model=model,
+                                               data_loader=train_loader,
+                                               optimizer=optimizer,
+                                               scheduler=scheduler,
+                                               loss_fn=loss_fn,
+                                               args=args,
+                                               epoch=epoch,
+                                               predictions=train_predictions,
+                                               training_device=training_device)
         train_losses[epoch] = avg_loss
 
         # Test
-        info_log('Start testing')
-        # TODO: need to test and store the best model according to min_test_loss
-        avg_loss = test(model=model,
-                        data_loader=train_loader,
-                        loss_fn=loss_fn,
-                        args=args,
-                        training_device=training_device)
+        info_log(f'[{epoch + 1}/{args.epochs}] Start testing')
+        avg_loss, test_target_company = test(model=model,
+                                             data_loader=test_loader,
+                                             loss_fn=loss_fn,
+                                             args=args,
+                                             epoch=epoch,
+                                             preidictions=test_predictions,
+                                             training_device=training_device)
         test_losses[epoch] = avg_loss
 
         if avg_loss < min_test_loss:
             min_test_loss = avg_loss
-            checkpoint = {'network':model.state_dict()}
+            checkpoint = {'network': model.state_dict()}
             torch.save(checkpoint, f'models/network_{epoch}_{avg_loss:.4f}.pt')
 
         # Plot
-        info_log('Plot losses')
+        info_log(f'[{epoch + 1}/{args.epochs}] Plot losses')
         plot_loss(losses=(train_losses, test_losses), epoch=epoch, label=['Train', 'Test'])
+        info_log(f'[{epoch + 1}/{args.epochs}] Plot predicted training results')
+        plot_predicted_results(train_predictions=train_predictions,
+                               test_predictions=test_predictions,
+                               seq_len=args.seq_len)
 
 
 def train(model: Network,
@@ -77,7 +96,8 @@ def train(model: Network,
           loss_fn: nn,
           args: Namespace,
           epoch: int,
-          training_device: torch.device) -> float:
+          predictions: Dict[str, List[float]],
+          training_device: torch.device) -> Tuple[float, Dict[str, List[float]]]:
     """
     Training
     :param model: Self attention model
@@ -87,8 +107,9 @@ def train(model: Network,
     :param loss_fn: Loss function
     :param args: All arguments
     :param epoch: Current epoch
+    :param predictions: Dictionary containing prediction results of target company
     :param training_device: Training device
-    :return: None
+    :return: Average loss and predicted results
     """
     model.train()
     total_loss, num_batch = 0.0, 0
@@ -110,6 +131,13 @@ def train(model: Network,
             optimizer.step()
             scheduler.step()
 
+            # Record outputs
+            try:
+                outputs = outputs.view(-1).cpu().detach()
+                predictions[symbol] += outputs.tolist()
+            except KeyError:
+                pass
+
             # Record loss
             total_loss += loss.item()
             num_batch += 1
@@ -117,26 +145,30 @@ def train(model: Network,
             if batch_idx % 20 == 0:
                 debug_log(f'[{epoch + 1}/{args.epochs}][{batch_idx + 1}/{len(stock_loader)}]   Loss: {loss.item()}')
 
-    return total_loss / num_batch
+    return total_loss / num_batch, predictions
 
 
 def test(model: Network,
          data_loader: StockDataloader,
          loss_fn: nn,
          args: Namespace,
-         training_device: torch.device) -> float:
+         epoch: int,
+         predictions: Dict[str, List[float]],
+         training_device: torch.device) -> Tuple[float, Dict[str, List[float]]]:
     """
     Testing
     :param model: Self attention model
     :param data_loader: Testing data loader
     :param args: All arguments
+    :param epoch: Current epoch
+    :param predictions: Dictionary containing prediction results of target company
     :param training_device Training device
-    :return: Mean testing loss
+    :return: Average loss and predicted results
     """
     model.eval()
     total_loss, num_batch = 0.0, 0
     for symbol, stock_loader in data_loader:
-        info_log(f"Start testing stock '{symbol}'")
+        info_log(f"[{epoch + 1}/{args.epochs}] Start testing stock '{symbol}'")
         for batch_idx, batched_data in enumerate(stock_loader):
             # Get data
             sequence, close = batched_data
@@ -147,11 +179,18 @@ def test(model: Network,
             outputs = model.forward(inputs=sequence, symbol=symbol)
             loss = loss_fn(outputs, close)
 
+            # Record outputs
+            try:
+                outputs = outputs.view(-1).cpu().detach()
+                predictions[symbol] += outputs.tolist()
+            except KeyError:
+                pass
+
+            # Record loss
             total_loss += loss.item()
             num_batch += 1
 
-    return total_loss / num_batch
-    # TODO
+    return total_loss / num_batch, predictions
 
 
 def inference(model: Network,
