@@ -3,11 +3,65 @@ from argparse import Namespace
 from model import Network
 from data_converter import generate_train_and_test
 from data_loader import StockDataloader
+from visualizer import plot_loss
+from numpy import inf
 import torch.optim as optim
 import torch.nn as nn
 import torch
 import sys
 import os
+
+
+def train_and_evaluate(model: Network,
+                       train_loader: StockDataloader,
+                       test_loader: StockDataloader,
+                       optimizer: optim,
+                       scheduler: optim,
+                       loss_fn: nn,
+                       args: Namespace,
+                       training_device: torch.device) -> None:
+    """
+    Train the model and test it
+    :param model: Self attention model
+    :param train_loader: Training data loader
+    :param test_loader: Testing data loader
+    :param optimizer: Optimizer
+    :param scheduler: Scheduler
+    :param loss_fn: Loss function
+    :param args: All arguments
+    :param training_device: Training device
+    :return: None
+    """
+    # Setup loss container
+    train_losses = [0.0 for _ in range(args.epochs)]
+    test_losses = [0.0 for _ in range(args.epochs)]
+
+    min_test_loss = inf
+    for epoch in range(args.epochs):
+        # Train
+        info_log('Start training')
+        avg_loss = train(model=model,
+                         data_loader=train_loader,
+                         optimizer=optimizer,
+                         scheduler=scheduler,
+                         loss_fn=loss_fn,
+                         args=args,
+                         epoch=epoch,
+                         training_device=training_device)
+        train_losses[epoch] = avg_loss
+
+        # Test
+        info_log('Start testing')
+        # TODO: need to test and store the best model according to min_test_loss
+        # avg_loss = test()
+        # if avg_loss < min_test_loss:
+        #     min_test_loss = avg_loss
+        #     checkpoint = {'network':model.state_dict()}
+        #     torch.save(checkpoint, f'models/network_{epoch}_{avg_loss:.4f}.pt')
+
+        # Plot
+        info_log('Plot losses')
+        plot_loss(losses=(train_losses, test_losses), epoch=epoch, label=['Train', 'Test'])
 
 
 def train(model: Network,
@@ -16,7 +70,8 @@ def train(model: Network,
           scheduler: optim,
           loss_fn: nn,
           args: Namespace,
-          training_device: torch.device) -> None:
+          epoch: int,
+          training_device: torch.device) -> float:
     """
     Training
     :param model: Self attention model
@@ -25,38 +80,61 @@ def train(model: Network,
     :param scheduler: Scheduler
     :param loss_fn: Loss function
     :param args: All arguments
+    :param epoch: Current epoch
     :param training_device: Training device
     :return: None
     """
     model.train()
-    for epoch in range(args.epochs):
-        for symbol, stock_loader in data_loader:
-            info_log(f"[{epoch + 1}/{args.epochs}] Start training stock '{symbol}'")
-            for batch_idx, batched_data in enumerate(stock_loader):
-                # Get data
-                sequence, close = batched_data
-                sequence = sequence.to(training_device).type(torch.float)
-                close = close.to(training_device).type(torch.float).view(-1, 1)
+    total_loss, num_batch = 0.0, 0
+    for symbol, stock_loader in data_loader:
+        info_log(f"[{epoch + 1}/{args.epochs}] Start training stock '{symbol}'")
+        for batch_idx, batched_data in enumerate(stock_loader):
+            # Get data
+            sequence, close = batched_data
+            sequence = sequence.to(training_device).type(torch.float)
+            close = close.to(training_device).type(torch.float).view(-1, 1)
 
-                # Forward and compute loss
-                outputs = model.forward(inputs=sequence, symbol=symbol)
-                loss = loss_fn(outputs, close)
+            # Forward and compute loss
+            outputs = model.forward(inputs=sequence, symbol=symbol)
+            loss = loss_fn(outputs, close)
 
-                # Calculate gradients and update
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                scheduler.step()
+            # Calculate gradients and update
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
 
-                debug_log(f'[{epoch + 1}/{args.epochs}][{batch_idx + 1}/{len(stock_loader)}]   Loss: {loss.item()}')
+            # Record loss
+            total_loss += loss.item()
+            num_batch += 1
+
+            debug_log(f'[{epoch + 1}/{args.epochs}][{batch_idx + 1}/{len(stock_loader)}]   Loss: {loss.item()}')
+
+    return total_loss / num_batch
 
 
 def test(model: Network,
          data_loader: StockDataloader,
          args: Namespace,
-         training_device: torch.device) -> None:
+         training_device: torch.device) -> float:
     """
     Testing
+    :param model: Self attention model
+    :param data_loader: Testing data loader
+    :param args: All arguments
+    :param training_device Training device
+    :return: Mean testing loss
+    """
+    model.eval()
+    # TODO
+
+
+def inference(model: Network,
+              data_loader: StockDataloader,
+              args: Namespace,
+              training_device: torch.device) -> None:
+    """
+    Inference
     :param model: Self attention model
     :param data_loader: Testing data loader
     :param args: All arguments
@@ -64,7 +142,18 @@ def test(model: Network,
     :return: None
     """
     model.eval()
-    # TODO
+
+    for symbol, stock_loader in data_loader:
+        for batch_idx, batched_data in enumerate(stock_loader):
+            # Get data
+            sequence, close = batched_data
+            sequence = sequence.to(training_device).type(torch.float)
+            close = close.to(training_device).type(torch.float).view(-1, 1)
+
+            # Forward and compute loss
+            outputs = model.forward(inputs=sequence, symbol=symbol)
+            # TODO: need to convert the outputs back to stock price
+            # TODO: plot test figures (only sample some company for drawing)
 
 
 def info_log(log: str) -> None:
@@ -102,6 +191,8 @@ def main() -> None:
     # Create directory containing models
     if not os.path.exists('models/'):
         os.mkdir('models/')
+    if not os.path.exists('figures/'):
+        os.mkdir('figures/')
 
     # Parse arguments
     args = parse_arguments()
@@ -117,6 +208,7 @@ def main() -> None:
     info_log(f'Number of heads for multi-attention: {args.num_heads}')
     info_log(f'Dropout rate: {args.dropout_rate}')
     info_log(f'Hidden size between the linear layers in the network: {args.hidden_size}')
+    info_log(f'Inference only or not: {args.inference_only}')
     info_log(f'Training device: {training_device}')
 
     # Setup model
@@ -144,22 +236,23 @@ def main() -> None:
     train_dataloader = StockDataloader(mode='train', batch_size=args.batch_size, seq_len=args.seq_len)
     test_dataloader = StockDataloader(mode='test', batch_size=args.batch_size, seq_len=args.seq_len)
 
-    # Train
-    info_log('Start training')
-    train(model=model,
-          data_loader=train_dataloader,
-          optimizer=optimizer,
-          scheduler=scheduler,
-          loss_fn=loss_fn,
-          args=args,
-          training_device=training_device)
-
-    # Test
-    info_log('Start testing')
-    test(model=model,
-         data_loader=test_dataloader,
-         args=args,
-         training_device=training_device)
+    if not args.inference_only:
+        # Train and test
+        train_and_evaluate(model=model,
+                           train_loader=train_dataloader,
+                           test_loader=test_dataloader,
+                           optimizer=optimizer,
+                           scheduler=scheduler,
+                           loss_fn=loss_fn,
+                           args=args,
+                           training_device=training_device)
+    else:
+        # Inference
+        info_log('Start inferring')
+        inference(model=model,
+                  data_loader=test_dataloader,
+                  args=args,
+                  training_device=training_device)
 
 
 if __name__ == '__main__':
