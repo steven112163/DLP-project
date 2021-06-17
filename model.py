@@ -79,7 +79,6 @@ class MultiHeadAttention(nn.Module):
 
 class TransformerEncoder(nn.Module):
     def __init__(self,
-                 batch_size: int,
                  seq_len: int,
                  attn_dim: int,
                  num_heads: int,
@@ -94,7 +93,7 @@ class TransformerEncoder(nn.Module):
         )
 
         self.second = nn.Sequential(
-            nn.LayerNorm(normalized_shape=[batch_size, seq_len, 8]),
+            nn.LayerNorm(normalized_shape=[seq_len, 8]),
             nn.Linear(in_features=8,
                       out_features=hidden_size),
             nn.ReLU(inplace=True),
@@ -103,7 +102,7 @@ class TransformerEncoder(nn.Module):
             nn.Dropout(p=dropout_rate)
         )
 
-        self.layer_normalization = nn.LayerNorm(normalized_shape=[batch_size, seq_len, 8])
+        self.layer_normalization = nn.LayerNorm(normalized_shape=[seq_len, 8])
 
     def forward(self, inputs: Tuple[torch.Tensor, ...]) -> Tuple[torch.Tensor, ...]:
         """
@@ -120,7 +119,6 @@ class TransformerEncoder(nn.Module):
 
 class Network(nn.Module):
     def __init__(self,
-                 batch_size: int,
                  seq_len: int,
                  num_encoders: int,
                  attn_dim: int,
@@ -129,15 +127,13 @@ class Network(nn.Module):
                  hidden_size: int):
         super(Network, self).__init__()
 
-        self.batch_size = batch_size
         self.seq_len = seq_len
 
         self.time_embedding = Time2Vector(seq_len=seq_len)
         self.symbol_embedding = nn.Embedding(num_embeddings=26, embedding_dim=seq_len)
 
         self.encoder = [
-            TransformerEncoder(batch_size=batch_size,
-                               seq_len=seq_len,
+            TransformerEncoder(seq_len=seq_len,
                                attn_dim=attn_dim,
                                num_heads=num_heads,
                                dropout_rate=dropout_rate,
@@ -184,5 +180,5 @@ class Network(nn.Module):
 
         embedded_inputs, _, _ = self.encoder((embedded_inputs, embedded_inputs, embedded_inputs))
         embedded_inputs = self.average(embedded_inputs)
-        embedded_inputs = embedded_inputs.view(self.batch_size, self.seq_len)
+        embedded_inputs = embedded_inputs.view(-1, self.seq_len)
         return self.net(embedded_inputs)

@@ -295,8 +295,7 @@ def main() -> None:
 
     # Setup model
     info_log('Setup model ...')
-    model = Network(batch_size=args.batch_size,
-                    seq_len=args.seq_len,
+    model = Network(seq_len=args.seq_len,
                     num_encoders=args.num_encoders,
                     attn_dim=args.attn_dim,
                     num_heads=args.num_heads,
