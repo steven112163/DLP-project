@@ -11,7 +11,7 @@ class StockDataset(Dataset):
         csv_data = pd.read_csv(f'data/{mode}/{symbol}.csv',
                                delimiter=',',
                                usecols=['Open', 'High', 'Low', 'Close', 'Volume'])
-        self.data_tensor = torch.tensor(csv_data.values.tolist())
+        self.data_tensor = torch.FloatTensor(csv_data.values.tolist())
         self.seq_len = seq_len
 
     def __len__(self) -> int:
@@ -19,21 +19,18 @@ class StockDataset(Dataset):
         Number of data
         :return: Number of data
         """
-        return self.data_tensor.size(0) - self.seq_len + 1
+        return self.data_tensor.size(0) - self.seq_len
 
-    def __getitem__(self, index: int) -> Tuple[torch.FloatTensor, ...]:
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, ...]:
         """
         Get current data
         :param index: Index of training/testing data
         :return: Data
         """
-        # TODO
-        sequence, close = [], []
-        for idx in range(index, index + self.seq_len):
-            sequence.append(self.data_tensor[idx - self.seq_len:idx])
-            close.append(self.data_tensor[:, 3][idx])
+        sequence = self.data_tensor[index:index + self.seq_len]
+        close = self.data_tensor[index + self.seq_len, 3]
 
-        return torch.FloatTensor(sequence), torch.FloatTensor(close)
+        return sequence, close
 
 
 class StockDataloader:

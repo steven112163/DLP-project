@@ -29,7 +29,26 @@ def train(model: Network,
     :return: None
     """
     model.train()
-    # TODO
+    for epoch in range(args.epochs):
+        for symbol, stock_loader in data_loader:
+            info_log(f"[{epoch + 1}/{args.epochs}] Start training stock '{symbol}'")
+            for batch_idx, batched_data in enumerate(stock_loader):
+                # Get data
+                sequence, close = batched_data
+                sequence = sequence.to(training_device).type(torch.float)
+                close = close.to(training_device).type(torch.float).view(-1, 1)
+
+                # Forward and compute loss
+                outputs = model.forward(inputs=sequence, symbol=symbol)
+                loss = loss_fn(outputs, close)
+
+                # Calculate gradients and update
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                scheduler.step()
+
+                debug_log(f'[{epoch + 1}/{args.epochs}][{batch_idx + 1}/{len(stock_loader)}]   Loss: {loss.item()}')
 
 
 def test(model: Network,

@@ -133,7 +133,7 @@ class Network(nn.Module):
         self.seq_len = seq_len
 
         self.time_embedding = Time2Vector(seq_len=seq_len)
-        self.string_embedding = nn.Embedding(num_embeddings=26, embedding_dim=seq_len)
+        self.symbol_embedding = nn.Embedding(num_embeddings=26, embedding_dim=seq_len)
 
         self.encoder = [
             TransformerEncoder(batch_size=batch_size,
@@ -169,7 +169,7 @@ class Network(nn.Module):
         # Get embedded symbol from symbol string
         embedded_symbol = torch.zeros((1, seq_len), dtype=torch.float)
         for char in symbol:
-            embedded_symbol += self.string_embedding(
+            embedded_symbol += self.symbol_embedding(
                 torch.tensor([ord(char) - 97 if char.islower() else ord(char) - 65]))
         embedded_symbol.to(inputs.device)
 
