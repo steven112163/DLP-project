@@ -67,4 +67,33 @@ def plot_predicted_results(train_predictions: Dict[str, List[float]],
         del test_data
 
         plt.tight_layout()
-        plt.savefig(f'./figures/{symbol}_prediction.png')
+        plt.savefig(f'./figures/train/{symbol}_prediction.png')
+
+
+def plot_inference_results(predictions: Dict[str, List[float]],
+                           seq_len: int):
+    """
+    Plot inference results
+    :param predictions: Dictionary of 10 lists of inferring predictions
+    :param seq_len: Sequence length
+    :return: None
+    """
+    for symbol in predictions.keys():
+        plt.clf()
+
+        test_data = pd.read_csv(f'data/test/{symbol}.csv',
+                                delimiter=',',
+                                usecols=['Open', 'High', 'Low', 'Close', 'Volume'])
+        plt.title("Testing Data")
+        plt.xlabel('Date')
+        plt.ylabel('Closing Returns')
+        plt.plot(test_data['Close'], label='Closing Returns')
+        plt.plot(range(seq_len, len(predictions[symbol]) + seq_len),
+                 predictions[symbol],
+                 linewidth=3,
+                 label='Predicted Closing Returns')
+        plt.legend(loc='best')
+        del test_data
+
+        plt.tight_layout()
+        plt.savefig(f'./figures/inference/{symbol}_prediction.png')

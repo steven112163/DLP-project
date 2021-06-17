@@ -3,7 +3,7 @@ from argparse import Namespace
 from model import Network
 from data_converter import generate_train_and_test
 from data_loader import StockDataloader
-from visualizer import plot_loss, plot_predicted_results
+from visualizer import plot_loss, plot_predicted_results, plot_inference_results
 from numpy import inf
 from random import sample
 from typing import Dict, List, Tuple
@@ -39,7 +39,7 @@ def train_and_evaluate(model: Network,
     train_losses = [0.0 for _ in range(args.epochs)]
     test_losses = [0.0 for _ in range(args.epochs)]
 
-    # Target company for drawing
+    # Target companies for drawing
     symbol_csv = pd.read_csv(f'data/symbols.csv',
                              delimiter=',',
                              usecols=['Symbol'])
@@ -71,7 +71,7 @@ def train_and_evaluate(model: Network,
                                              loss_fn=loss_fn,
                                              args=args,
                                              epoch=epoch,
-                                             preidictions=test_predictions,
+                                             predictions=test_predictions,
                                              training_device=training_device)
         test_losses[epoch] = avg_loss
 
@@ -83,7 +83,7 @@ def train_and_evaluate(model: Network,
         # Plot
         info_log(f'[{epoch + 1}/{args.epochs}] Plot losses')
         plot_loss(losses=(train_losses, test_losses), epoch=epoch, label=['Train', 'Test'])
-        info_log(f'[{epoch + 1}/{args.epochs}] Plot predicted training results')
+        info_log(f'[{epoch + 1}/{args.epochs}] Plot predicted training and testing results')
         plot_predicted_results(train_predictions=train_predictions,
                                test_predictions=test_predictions,
                                seq_len=args.seq_len)
@@ -207,17 +207,34 @@ def inference(model: Network,
     """
     model.eval()
 
-    for symbol, stock_loader in data_loader:
-        for batch_idx, batched_data in enumerate(stock_loader):
-            # Get data
-            sequence, close = batched_data
-            sequence = sequence.to(training_device).type(torch.float)
-            close = close.to(training_device).type(torch.float).view(-1, 1)
+    # Target companies for drawing
+    symbol_csv = pd.read_csv(f'data/symbols.csv',
+                             delimiter=',',
+                             usecols=['Symbol'])
+    symbols = symbol_csv['Symbol'][sample(range(len(data_loader)), 10)].tolist()
+    del symbol_csv
+    predictions = {sym: [] for sym in symbols}
 
-            # Forward and compute loss
-            outputs = model.forward(inputs=sequence, symbol=symbol)
+    for symbol, stock_loader in data_loader:
+        if symbol in symbols:
+            for batch_idx, batched_data in enumerate(stock_loader):
+                # Get data
+                sequence, close = batched_data
+                sequence = sequence.to(training_device).type(torch.float)
+
+                # Forward and record predictions
+                outputs = model.forward(inputs=sequence, symbol=symbol)
+                try:
+                    outputs = outputs.view(-1).cpu().detach()
+                    predictions[symbol] += outputs.tolist()
+                except KeyError:
+                    pass
             # TODO: need to convert the outputs back to stock price
-            # TODO: plot test figures (only sample some company for drawing)
+
+    # Plot
+    info_log(f'Plot predicted inferring results')
+    plot_inference_results(predictions=predictions,
+                           seq_len=args.seq_len)
 
 
 def info_log(log: str) -> None:
@@ -256,7 +273,8 @@ def main() -> None:
     if not os.path.exists('models/'):
         os.mkdir('models/')
     if not os.path.exists('figures/'):
-        os.mkdir('figures/')
+        os.makedirs('figures/train/')
+        os.makedirs('figures/inference/')
 
     # Parse arguments
     args = parse_arguments()
