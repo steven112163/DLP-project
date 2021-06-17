@@ -31,12 +31,11 @@ class Time2Vector(nn.Module):
 class SingleHeadAttention(nn.Module):
     def __init__(self, attn_dim: int):
         super(SingleHeadAttention, self).__init__()
-        # TODO
         self.attn_dim = attn_dim
 
-        self.query = nn.Linear(in_features=8, out_features=self.attn_dim)
-        self.key = nn.Linear(in_features=8, out_features=self.attn_dim)
-        self.value = nn.Linear(in_features=8, out_features=self.attn_dim)
+        self.query = nn.Linear(in_features=8, out_features=attn_dim)
+        self.key = nn.Linear(in_features=8, out_features=attn_dim)
+        self.value = nn.Linear(in_features=8, out_features=attn_dim)
 
         self.softmax = nn.Softmax(dim=-1)
 
