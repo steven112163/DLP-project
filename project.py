@@ -113,8 +113,8 @@ def train(model: Network,
     """
     model.train()
     total_loss, num_batch = 0.0, 0
-    for symbol, stock_loader in data_loader:
-        info_log(f"[{epoch + 1}/{args.epochs}] Start training stock '{symbol}'")
+    for symbol_idx, stock in enumerate(data_loader):
+        symbol, stock_loader = stock
         for batch_idx, batched_data in enumerate(stock_loader):
             # Get data
             sequence, close = batched_data
@@ -143,7 +143,10 @@ def train(model: Network,
             num_batch += 1
 
             if batch_idx % 20 == 0:
-                debug_log(f'[{epoch + 1}/{args.epochs}][{batch_idx + 1}/{len(stock_loader)}]   Loss: {loss.item()}')
+                log = f'[{epoch + 1}/{args.epochs}]' + \
+                      f'[{symbol_idx + 1}/{len(data_loader)}]' + \
+                      f'[{batch_idx + 1}/{len(stock_loader)}]   Train Loss: {loss.item()}'
+                debug_log(log)
 
     return total_loss / num_batch, predictions
 
@@ -167,8 +170,8 @@ def test(model: Network,
     """
     model.eval()
     total_loss, num_batch = 0.0, 0
-    for symbol, stock_loader in data_loader:
-        info_log(f"[{epoch + 1}/{args.epochs}] Start testing stock '{symbol}'")
+    for symbol_idx, stock in enumerate(data_loader):
+        symbol, stock_loader = stock
         for batch_idx, batched_data in enumerate(stock_loader):
             # Get data
             sequence, close = batched_data
@@ -189,6 +192,12 @@ def test(model: Network,
             # Record loss
             total_loss += loss.item()
             num_batch += 1
+
+            if batch_idx % 20 == 0:
+                log = f'[{epoch + 1}/{args.epochs}]' + \
+                      f'[{symbol_idx + 1}/{len(data_loader)}]' + \
+                      f'[{batch_idx + 1}/{len(stock_loader)}]   Test Loss: {loss.item()}'
+                debug_log(log)
 
     return total_loss / num_batch, predictions
 
