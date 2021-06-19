@@ -1,7 +1,7 @@
 from argument_parser import parse_arguments
 from argparse import Namespace
 from model import Network
-from data_converter import generate_train_and_test
+from utils import generate_train_and_test, get_data_loaders
 from data_loader import StockDataloader
 from visualizer import plot_loss, plot_predicted_results, plot_inference_results
 from numpy import inf
@@ -323,8 +323,7 @@ def main() -> None:
 
     # Get stock data loader
     info_log('Get data loaders ...')
-    train_dataloader = StockDataloader(mode='train', batch_size=args.batch_size, seq_len=args.seq_len)
-    test_dataloader = StockDataloader(mode='test', batch_size=args.batch_size, seq_len=args.seq_len)
+    train_dataloader, test_dataloader = get_data_loaders(batch_size=args.batch_size, seq_len=args.seq_len)
 
     if not args.inference_only:
         # Train and test

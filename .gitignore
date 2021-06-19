@@ -1,6 +1,7 @@
 .idea
 __pycache__
 data
+original_data
 archive
 figures
 models

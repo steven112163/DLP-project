@@ -1,5 +1,5 @@
 from torch.utils.data import Dataset, DataLoader
-from typing import Tuple
+from typing import Tuple, List
 import torch
 import pandas as pd
 
@@ -35,19 +35,11 @@ class StockDataset(Dataset):
 
 
 class StockDataloader:
-    def __init__(self, mode: str, batch_size: int, seq_len: int):
+    def __init__(self, symbols: List[str], datasets: List[StockDataset], batch_size: int):
         super(StockDataloader, self).__init__()
 
-        self.symbols = pd.read_csv(f'data/symbols.csv',
-                                   delimiter=',',
-                                   usecols=['Symbol'])
-
-        self.stocks = []
-        for symbol in self.symbols['Symbol']:
-            dataset = StockDataset(mode=mode, symbol=symbol, seq_len=seq_len)
-            if len(dataset) > 0:
-                # Only get the stock with enough length
-                self.stocks.append(DataLoader(dataset, batch_size=batch_size))
+        self.symbols = symbols
+        self.stocks = [DataLoader(dataset, batch_size=batch_size) for dataset in datasets]
 
     def __len__(self) -> int:
         """
@@ -62,4 +54,4 @@ class StockDataloader:
         :param index: Index of stocks
         :return: Current stock data loader with its symbol
         """
-        return self.symbols['Symbol'][index], self.stocks[index]
+        return self.symbols[index], self.stocks[index]
