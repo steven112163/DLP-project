@@ -92,8 +92,9 @@ class TransformerEncoder(nn.Module):
             nn.Dropout(p=dropout_rate)
         )
 
+        self.layer_norm = nn.LayerNorm(normalized_shape=[seq_len, 8])
+
         self.second = nn.Sequential(
-            nn.LayerNorm(normalized_shape=[seq_len, 8]),
             nn.Linear(in_features=8,
                       out_features=hidden_size),
             nn.ReLU(inplace=True),
@@ -112,8 +113,11 @@ class TransformerEncoder(nn.Module):
         """
         query = inputs[0]
         partial_results = self.first(inputs)
-        partial_results = self.second(query + partial_results)
-        outputs = self.layer_normalization(query + partial_results)
+        partial_results = self.layer_norm(query + partial_results)
+        outputs = self.second(partial_results)
+        outputs = self.layer_normalization(outputs + partial_results)
+        #partial_results = self.second(query + partial_results)
+        #outputs = self.layer_normalization(query + partial_results)
         return outputs, outputs, outputs
 
 
