@@ -179,8 +179,9 @@ def test(model: Network,
             close = close.to(training_device).type(torch.float).view(-1, 1)
 
             # Forward and compute loss
-            outputs = model.forward(inputs=sequence, symbol=symbol)
-            loss = loss_fn(outputs, close)
+            with torch.no_grad():
+                outputs = model.forward(inputs=sequence, symbol=symbol)
+                loss = loss_fn(outputs, close)
 
             # Record outputs
             try:
@@ -232,7 +233,8 @@ def inference(model: Network,
                 sequence = sequence.to(training_device).type(torch.float)
 
                 # Forward and record predictions
-                outputs = model.forward(inputs=sequence, symbol=symbol)
+                with torch.no_grad():
+                    outputs = model.forward(inputs=sequence, symbol=symbol)
                 try:
                     outputs = outputs.view(-1).cpu().detach()
                     predictions[symbol] += outputs.tolist()
