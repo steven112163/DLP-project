@@ -1,6 +1,7 @@
 from typing import List, Tuple, Dict
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 
 def plot_loss(losses: Tuple[List[float], ...], epoch: int, label=List[str]) -> None:
@@ -40,7 +41,7 @@ def plot_predicted_results(train_predictions: Dict[str, List[float]],
                                  delimiter=',',
                                  usecols=['Open', 'High', 'Low', 'Close', 'Volume'])
         ax = fig.add_subplot(211)
-        ax.set_title("Training Data")
+        ax.set_title('Training Data')
         ax.set_xlabel('Date')
         ax.set_ylabel('Closing Returns')
         ax.plot(train_data['Close'], label='Closing Returns')
@@ -55,13 +56,12 @@ def plot_predicted_results(train_predictions: Dict[str, List[float]],
                                 delimiter=',',
                                 usecols=['Open', 'High', 'Low', 'Close', 'Volume'])
         ax = fig.add_subplot(212)
-        ax.set_title("Testing Data")
+        ax.set_title('Testing Data')
         ax.set_xlabel('Date')
         ax.set_ylabel('Closing Returns')
         ax.plot(test_data['Close'], label='Closing Returns')
         ax.plot(range(seq_len, len(test_predictions[symbol]) + seq_len),
                 test_predictions[symbol],
-                linewidth=3,
                 label='Predicted Closing Returns')
         ax.legend(loc='best')
         del test_data
@@ -80,19 +80,38 @@ def plot_inference_results(predictions: Dict[str, List[float]],
     """
     for symbol in predictions.keys():
         plt.clf()
+        fig = plt.figure()
 
+        # Plot predicted percentage
         test_data = pd.read_csv(f'data/test/{symbol}.csv',
                                 delimiter=',',
                                 usecols=['Open', 'High', 'Low', 'Close', 'Volume'])
-        plt.title("Testing Data")
-        plt.xlabel('Date')
-        plt.ylabel('Closing Returns')
-        plt.plot(test_data['Close'], label='Closing Returns')
-        plt.plot(range(seq_len, len(predictions[symbol]) + seq_len),
-                 predictions[symbol],
-                 linewidth=3,
-                 label='Predicted Closing Returns')
-        plt.legend(loc='best')
+        ax = fig.add_subplot(211)
+        ax.set_title('Predicted Percentage')
+        ax.set_xlabel('Date')
+        ax.set_ylabel('Closing Returns (%)')
+        ax.plot(test_data['Close'], label='Closing Returns')
+        ax.plot(range(seq_len, len(predictions[symbol]) + seq_len),
+                predictions[symbol],
+                label='Predicted Closing Returns')
+        ax.legend(loc='best')
+        del test_data
+
+        # Plot predicted stock price
+        test_data = pd.read_csv(f'original_data/test/{symbol}.csv',
+                                delimiter=',',
+                                usecols=['Open', 'High', 'Low', 'Close', 'Volume'])
+        ax = fig.add_subplot(212)
+        ax.set_title('Predicted Stock Price')
+        ax.set_xlabel('Date')
+        ax.set_ylabel('Closing Returns')
+        ax.plot(test_data['Close'], label='Closing Returns')
+        predictions[symbol] = np.add(predictions[symbol], 1.0)
+        predicted = np.multiply(test_data['Close'][seq_len + 1:].values.tolist(), predictions[symbol])
+        ax.plot(range(seq_len + 1, len(predicted) + seq_len + 1),
+                predicted,
+                label='Predicted Closing Returns')
+        ax.legend(loc='best')
         del test_data
 
         plt.tight_layout()

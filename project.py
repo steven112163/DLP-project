@@ -240,7 +240,6 @@ def inference(model: Network,
                     predictions[symbol] += outputs.tolist()
                 except KeyError:
                     pass
-            # TODO: need to convert the outputs back to stock price
 
     # Plot
     info_log(f'Plot predicted inferring results')
