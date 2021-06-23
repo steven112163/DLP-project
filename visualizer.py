@@ -112,7 +112,15 @@ def plot_inference_results(predictions: Dict[str, List[float]],
                 predicted,
                 label='Predicted Closing Returns')
         ax.legend(loc='best')
-        del test_data
 
         plt.tight_layout()
         plt.savefig(f'./figures/inference/{symbol}_prediction.png')
+
+        # Print MSE, MAE, and MAPE of the given stock
+        original_data = np.array(test_data['Close'][seq_len + 1:].values.tolist())
+        predicted = np.array(predicted)
+        difference = original_data - predicted
+        mse = np.sum(difference ** 2) / len(predicted)
+        mae = np.sum(np.abs(difference)) / len(predicted)
+        mape = np.sum(np.abs(difference) / original_data) / len(predicted) * 100
+        print(f'MSE, MAE, and MAPE of stock {symbol}:   {mse:.4f},   {mae:.4f},   {mape:.4f} %')
