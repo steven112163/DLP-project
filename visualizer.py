@@ -15,8 +15,8 @@ def plot_loss(losses: Tuple[List[float], ...], epoch: int, label=List[str]) -> N
     plt.clf()
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
-    for loss in losses:
-        plt.plot(range(epoch + 1), loss[:epoch + 1], label=label)
+    for idx, loss in enumerate(losses):
+        plt.plot(range(epoch + 1), loss[:epoch + 1], label=label[idx])
     plt.legend()
     plt.tight_layout()
     plt.savefig(f'./figures/loss.png')

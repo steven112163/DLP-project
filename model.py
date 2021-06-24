@@ -148,10 +148,14 @@ class Network(nn.Module):
         self.net = nn.Sequential(
             nn.Dropout(p=dropout_rate),
             nn.Linear(in_features=seq_len,
-                      out_features=64),
+                      out_features=50),
             nn.ReLU(inplace=True),
             nn.Dropout(p=dropout_rate),
-            nn.Linear(in_features=64,
+            nn.Linear(in_features=50,
+                      out_features=20),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout_rate),
+            nn.Linear(in_features=20,
                       out_features=1)
         )
 

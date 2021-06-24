@@ -17,7 +17,7 @@ def parse_arguments() -> Namespace:
                         help='Number of transformer encoder in the network')
     parser.add_argument('-a', '--attn_dim', default=96, type=int, help='Dimension of single attention output')
     parser.add_argument('-nh', '--num_heads', default=12, type=int, help='Number of heads for multi-attention')
-    parser.add_argument('-d', '--dropout_rate', default=0.1, type=float, help='Dropout rate')
+    parser.add_argument('-d', '--dropout_rate', default=0.3, type=float, help='Dropout rate')
     parser.add_argument('-hs', '--hidden_size', default=256, type=int,
                         help='Hidden size between the linear layers in the network')
     parser.add_argument('-i', '--inference_only', action='store_true', help='Inference only or not')
