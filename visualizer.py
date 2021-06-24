@@ -124,3 +124,4 @@ def plot_inference_results(predictions: Dict[str, List[float]],
         mae = np.sum(np.abs(difference)) / len(predicted)
         mape = np.sum(np.abs(difference) / original_data) / len(predicted) * 100
         print(f'MSE, MAE, and MAPE of stock {symbol}:   {mse:.4f},   {mae:.4f},   {mape:.4f} %')
+        del test_data
