@@ -122,11 +122,12 @@ def train(model: Network,
             close = close.to(training_device).type(torch.float).view(-1, 1)
 
             # Forward and compute loss
+            model.zero_grad()
+            optimizer.zero_grad()
             outputs = model.forward(inputs=sequence, symbol=symbol)
             loss = loss_fn(outputs, close)
 
             # Calculate gradients and update
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             scheduler.step()
