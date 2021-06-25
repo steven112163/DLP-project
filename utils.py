@@ -130,13 +130,13 @@ def get_data_loaders(symbols: pd.DataFrame, batch_size: int, seq_len: int) -> Tu
     # Find train datasets with insufficient sequence
     train_insufficient = []
     for idx, dataset in enumerate(train_datasets):
-        if len(dataset) == 0:
+        if len(dataset) <= 0:
             train_insufficient.append(idx)
 
     # Find test datasets with insufficient sequence
     test_insufficient = []
     for idx, dataset in enumerate(test_datasets):
-        if len(dataset) == 0:
+        if len(dataset) <= 0:
             test_insufficient.append(idx)
 
     # Find common insufficient list

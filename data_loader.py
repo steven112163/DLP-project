@@ -19,7 +19,7 @@ class StockDataset(Dataset):
         Number of data
         :return: Number of data
         """
-        length = self.data_tensor.size(0) - self.seq_len
+        length = self.data_tensor.size(0) - self.seq_len - 1
         return 0 if length < 0 else length
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, ...]:

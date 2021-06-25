@@ -230,7 +230,7 @@ def inference(model: Network,
         if symbol in symbols:
             for batch_idx, batched_data in enumerate(stock_loader):
                 # Get data
-                sequence, close = batched_data
+                sequence, _ = batched_data
                 sequence = sequence.to(training_device).type(torch.float)
 
                 # Forward and record predictions
