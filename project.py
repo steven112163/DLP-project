@@ -40,7 +40,7 @@ def train_and_evaluate(model: Network,
     symbols = pd.read_csv(f'data/symbols.csv',
                           delimiter=',',
                           usecols=['Symbol'])
-    train_loader, test_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
+    symbols, train_loader, test_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
 
     # Target companies for drawing
     symbols = symbols['Symbol'][sample(range(len(train_loader)), 5)].tolist()
@@ -220,7 +220,7 @@ def inference(model: Network,
     symbols = pd.read_csv(f'data/symbols.csv',
                           delimiter=',',
                           usecols=['Symbol'])
-    _, data_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
+    symbols, _, data_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
 
     # Target companies for drawing
     symbols = symbols['Symbol'][sample(range(len(data_loader)), 10)].tolist()
