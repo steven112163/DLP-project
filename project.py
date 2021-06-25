@@ -223,7 +223,7 @@ def inference(model: Network,
     _, data_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
 
     # Target companies for drawing
-    symbols = symbols['Symbols'][sample(range(len(data_loader)), 10)].tolist()
+    symbols = symbols['Symbol'][sample(range(len(data_loader)), 10)].tolist()
     predictions = {sym: [] for sym in symbols}
 
     for symbol, stock_loader in data_loader:
