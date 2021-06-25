@@ -16,8 +16,6 @@ import os
 
 
 def train_and_evaluate(model: Network,
-                       train_loader: StockDataloader,
-                       test_loader: StockDataloader,
                        optimizer: optim,
                        scheduler: optim,
                        loss_fn: nn,
@@ -26,8 +24,6 @@ def train_and_evaluate(model: Network,
     """
     Train the model and test it
     :param model: Self attention model
-    :param train_loader: Training data loader
-    :param test_loader: Testing data loader
     :param optimizer: Optimizer
     :param scheduler: Scheduler
     :param loss_fn: Loss function
@@ -39,12 +35,16 @@ def train_and_evaluate(model: Network,
     train_losses = [0.0 for _ in range(args.epochs)]
     test_losses = [0.0 for _ in range(args.epochs)]
 
+    # Get stock data loader
+    info_log('Get data loaders ...')
+    symbols = pd.read_csv(f'data/symbols.csv',
+                          delimiter=',',
+                          usecols=['Symbol'])
+    symbols = symbols['Symbol'].values.tolist()
+    train_loader, test_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
+
     # Target companies for drawing
-    symbol_csv = pd.read_csv(f'data/symbols.csv',
-                             delimiter=',',
-                             usecols=['Symbol'])
-    symbols = symbol_csv['Symbol'][sample(range(len(train_loader)), 5)].tolist()
-    del symbol_csv
+    symbols = symbols[sample(range(len(train_loader)), 5)]
 
     min_test_loss = inf
     for epoch in range(args.epochs):
@@ -205,25 +205,27 @@ def test(model: Network,
 
 
 def inference(model: Network,
-              data_loader: StockDataloader,
               args: Namespace,
               training_device: torch.device) -> None:
     """
     Inference
     :param model: Self attention model
-    :param data_loader: Testing data loader
     :param args: All arguments
     :param training_device Training device
     :return: None
     """
     model.eval()
 
+    # Get stock data loader
+    info_log('Get data loaders ...')
+    symbols = pd.read_csv(f'data/symbols.csv',
+                          delimiter=',',
+                          usecols=['Symbol'])
+    symbols = symbols['Symbol'].values.tolist()
+    _, data_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
+
     # Target companies for drawing
-    symbol_csv = pd.read_csv(f'data/symbols.csv',
-                             delimiter=',',
-                             usecols=['Symbol'])
-    symbols = symbol_csv['Symbol'][sample(range(len(data_loader)), 10)].tolist()
-    del symbol_csv
+    symbols = symbols[sample(range(len(data_loader)), 10)]
     predictions = {sym: [] for sym in symbols}
 
     for symbol, stock_loader in data_loader:
@@ -300,7 +302,7 @@ def main() -> None:
     info_log(f'Dimension of single attention output: {args.attn_dim}')
     info_log(f'Number of heads for multi-attention: {args.num_heads}')
     info_log(f'Dropout rate: {args.dropout_rate}')
-    info_log(f'Hidden size between the linear layers in the network: {args.hidden_size}')
+    info_log(f'Hidden size between the linear layers in the encoder: {args.hidden_size}')
     info_log(f'Inference only or not: {args.inference_only}')
     info_log(f'Training device: {training_device}')
 
@@ -323,15 +325,9 @@ def main() -> None:
     info_log('Generate training and testing data from archive ...')
     generate_train_and_test(root_dir=args.root_dir)
 
-    # Get stock data loader
-    info_log('Get data loaders ...')
-    train_dataloader, test_dataloader = get_data_loaders(batch_size=args.batch_size, seq_len=args.seq_len)
-
     if not args.inference_only:
         # Train and test
         train_and_evaluate(model=model,
-                           train_loader=train_dataloader,
-                           test_loader=test_dataloader,
                            optimizer=optimizer,
                            scheduler=scheduler,
                            loss_fn=loss_fn,
@@ -341,7 +337,6 @@ def main() -> None:
         # Inference
         info_log('Start inferring')
         inference(model=model,
-                  data_loader=test_dataloader,
                   args=args,
                   training_device=training_device)
 
