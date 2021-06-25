@@ -40,11 +40,10 @@ def train_and_evaluate(model: Network,
     symbols = pd.read_csv(f'data/symbols.csv',
                           delimiter=',',
                           usecols=['Symbol'])
-    symbols = symbols['Symbol'].values.tolist()
     train_loader, test_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
 
     # Target companies for drawing
-    symbols = symbols[sample(range(len(train_loader)), 5)]
+    symbols = symbols['Symbol'][sample(range(len(train_loader)), 5)].tolist()
 
     min_test_loss = inf
     for epoch in range(args.epochs):
@@ -221,11 +220,10 @@ def inference(model: Network,
     symbols = pd.read_csv(f'data/symbols.csv',
                           delimiter=',',
                           usecols=['Symbol'])
-    symbols = symbols['Symbol'].values.tolist()
     _, data_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
 
     # Target companies for drawing
-    symbols = symbols[sample(range(len(data_loader)), 10)]
+    symbols = symbols['Symbols'][sample(range(len(data_loader)), 10)].tolist()
     predictions = {sym: [] for sym in symbols}
 
     for symbol, stock_loader in data_loader:

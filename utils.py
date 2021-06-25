@@ -115,14 +115,15 @@ def generate_train_and_test(root_dir: str) -> None:
     existing_symbols.to_csv(f'data/symbols.csv', index=False)
 
 
-def get_data_loaders(symbols: List[str], batch_size: int, seq_len: int) -> Tuple[StockDataloader, StockDataloader]:
+def get_data_loaders(symbols: pd.DataFrame, batch_size: int, seq_len: int) -> Tuple[StockDataloader, StockDataloader]:
     """
     Get training and testing data loaders
-    :param symbols: List of symbols
+    :param symbols: DataFrame of symbols
     :param batch_size: Batch size
     :param seq_len: Sequence length
     :return: Training data loader and testing data loader
     """
+    symbols = symbols['Symbol'].tolist()
     train_datasets = [StockDataset(mode='train', symbol=symbol, seq_len=seq_len) for symbol in symbols]
     test_datasets = [StockDataset(mode='test', symbol=symbol, seq_len=seq_len) for symbol in symbols]
 
