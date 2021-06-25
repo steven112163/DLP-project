@@ -140,7 +140,7 @@ def get_data_loaders(symbols: pd.DataFrame, batch_size: int, seq_len: int) -> Tu
             test_insufficient.append(idx)
 
     # Find common insufficient list
-    insufficient = train_insufficient + list(set(test_insufficient) - set(train_insufficient))
+    insufficient = list(set(test_insufficient) | set(train_insufficient))
     insufficient.sort()
 
     # Remove stocks with insufficient length

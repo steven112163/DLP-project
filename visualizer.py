@@ -108,7 +108,7 @@ def plot_inference_results(predictions: Dict[str, List[float]],
         ax.plot(test_data['Close'], label='Closing Returns')
         predictions[symbol] = np.add(predictions[symbol], 1.0)
         predicted = np.multiply(test_data['Close'][-len(predictions[symbol]):].values.tolist(), predictions[symbol])
-        ax.plot(range(seq_len + 1, len(predicted) + seq_len + 1),
+        ax.plot(range(seq_len, len(predicted) + seq_len),
                 predicted,
                 label='Predicted Closing Returns')
         ax.legend(loc='best')
