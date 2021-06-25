@@ -107,7 +107,8 @@ def plot_inference_results(predictions: Dict[str, List[float]],
         ax.set_ylabel('Closing Returns')
         ax.plot(test_data['Close'], label='Closing Returns')
         predictions[symbol] = np.add(predictions[symbol], 1.0)
-        predicted = np.multiply(test_data['Close'][-len(predictions[symbol]):].values.tolist(), predictions[symbol])
+        original_data = np.array(test_data['Close'][-len(predictions[symbol]) - 1:-1].values.tolist())
+        predicted = np.multiply(original_data, predictions[symbol])
         ax.plot(range(seq_len + 1, len(predicted) + seq_len + 1),
                 predicted,
                 label='Predicted Closing Returns')
@@ -117,7 +118,6 @@ def plot_inference_results(predictions: Dict[str, List[float]],
         plt.savefig(f'./figures/inference/{symbol}_prediction.png')
 
         # Print MSE, MAE, and MAPE of the given stock
-        original_data = np.array(test_data['Close'][-len(predictions[symbol]):].values.tolist())
         predicted = np.array(predicted)
         difference = original_data - predicted
         mse = np.sum(difference ** 2) / len(predicted)

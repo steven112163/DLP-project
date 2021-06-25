@@ -301,6 +301,7 @@ def main() -> None:
     info_log(f'Number of heads for multi-attention: {args.num_heads}')
     info_log(f'Dropout rate: {args.dropout_rate}')
     info_log(f'Hidden size between the linear layers in the encoder: {args.hidden_size}')
+    info_log(f'Loss function: {args.loss_function}')
     info_log(f'Inference only or not: {args.inference_only}')
     info_log(f'Training device: {training_device}')
 
@@ -317,7 +318,10 @@ def main() -> None:
         model.load_state_dict(checkpoint['network'])
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=5e-5)
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda e: min(1.0, (e + 1) / args.warmup))
-    loss_fn = nn.MSELoss().to(training_device)
+    if args.loss_function == 'l2':
+        loss_fn = nn.MSELoss().to(training_device)
+    else:
+        loss_fn = nn.L1Loss().to(training_device)
 
     # Generate data first
     info_log('Generate training and testing data from archive ...')
