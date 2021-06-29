@@ -5,10 +5,16 @@
 
 
 ## Dataset
-Download data from [dataset](https://www.kaggle.com/jacksoncrow/stock-market-dataset).  
+Download data from [dataset](https://www.kaggle.com/jacksoncrow/stock-market-dataset) and unzip it into directory "archive".  
 ```shell
-kaggle datasets download -d jacksoncrow/stock-market-dataset
+$ kaggle datasets download -d jacksoncrow/stock-market-dataset
 ```
+
+
+
+## Reference
+Reference is implemented in Tensorflow.  
+[Stock predictions with state-of-the-art Transformer and Time Embeddings](https://towardsdatascience.com/stock-predictions-with-state-of-the-art-transformer-and-time-embeddings-3a4485237de6)
 
 
 
