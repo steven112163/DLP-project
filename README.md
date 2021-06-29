@@ -24,7 +24,7 @@ kaggle datasets download -d jacksoncrow/stock-market-dataset
 |`'-a', '--attn_dim'`|Dimension of single attention output|int|96|
 |`'-nh', '--num_heads'`|Number of heads for multi-attention|int|12|
 |`'-d', '--dropout_rate'`|Dropout rate|float|0.3|
-|`'-hs', '--hidden_size'`|Hidden size between the linear layers in the network|int|256|
+|`'-hs', '--hidden_size'`|Hidden size between the linear layers in the encoder|int|256|
 |`'-loss', '--loss_function'`|Loss function|'l1' or 'l2'|'l2'|
 |`'-i', '--inference_only'`|Inference only or not|'store_true'|False|
 |`'-r', '--root_dir'`|Directory containing the downloaded data|str|'archive'|
