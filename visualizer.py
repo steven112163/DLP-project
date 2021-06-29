@@ -70,11 +70,11 @@ def plot_predicted_results(train_predictions: Dict[str, List[float]],
         plt.savefig(f'./figures/train/{symbol}_prediction.png')
 
 
-def plot_inference_results(predictions: Dict[str, List[float]],
+def plot_inference_results(predictions: Dict[str, Dict[str, List[float]]],
                            seq_len: int):
     """
     Plot inference results
-    :param predictions: Dictionary of 10 lists of inferring predictions
+    :param predictions: Dictionary of 10 lists of inferring train/test predictions
     :param seq_len: Sequence length
     :return: None
     """
@@ -82,46 +82,66 @@ def plot_inference_results(predictions: Dict[str, List[float]],
         plt.clf()
         fig = plt.figure()
 
-        # Plot predicted percentage
-        test_data = pd.read_csv(f'data/test/{symbol}.csv',
-                                delimiter=',',
-                                usecols=['Open', 'High', 'Low', 'Close', 'Volume'])
-        ax = fig.add_subplot(211)
-        ax.set_title('Predicted Percentage')
-        ax.set_xlabel('Date')
-        ax.set_ylabel('Closing Returns (%)')
-        ax.plot(test_data['Close'], label='Closing Returns')
-        ax.plot(range(seq_len, len(predictions[symbol]) + seq_len),
-                predictions[symbol],
-                label='Predicted Closing Returns')
-        ax.legend(loc='best')
-        del test_data
+        results = f'MSE, MAE, and MAPE of stock {symbol} (training|testing):   '
 
-        # Plot predicted stock price
-        test_data = pd.read_csv(f'original_data/test/{symbol}.csv',
-                                delimiter=',',
-                                usecols=['Open', 'High', 'Low', 'Close', 'Volume'])
+        # Plot predicted stock price (training data)
+        ax = fig.add_subplot(211)
+        results += plot_stock(symbol=symbol,
+                              ax=ax,
+                              predictions=predictions,
+                              seq_len=seq_len,
+                              mode='train')
+        results += ' | '
+
+        # Plot predicted stock price (testing data)
         ax = fig.add_subplot(212)
-        ax.set_title('Predicted Stock Price')
-        ax.set_xlabel('Date')
-        ax.set_ylabel('Closing Returns')
-        ax.plot(test_data['Close'], label='Closing Returns')
-        predictions[symbol] = np.add(predictions[symbol], 1.0)
-        original_data = np.array(test_data['Close'][-len(predictions[symbol]) - 1:-1].values.tolist())
-        predicted = np.multiply(original_data, predictions[symbol])
-        ax.plot(range(seq_len + 1, len(predicted) + seq_len + 1),
-                predicted,
-                label='Predicted Closing Returns')
-        ax.legend(loc='best')
+        results += plot_stock(symbol=symbol,
+                              ax=ax,
+                              predictions=predictions,
+                              seq_len=seq_len,
+                              mode='test')
 
         plt.tight_layout()
         plt.savefig(f'./figures/inference/{symbol}_prediction.png')
 
-        # Print MSE, MAE, and MAPE of the given stock
-        predicted = np.array(predicted)
-        difference = original_data - predicted
-        mse = np.sum(difference ** 2) / len(predicted)
-        mae = np.sum(np.abs(difference)) / len(predicted)
-        mape = np.sum(np.abs(difference) / original_data) / len(predicted) * 100
-        print(f'MSE, MAE, and MAPE of stock {symbol}:   {mse:.4f},   {mae:.4f},   {mape:.4f} %')
-        del test_data
+        print(results)
+
+
+def plot_stock(symbol: str,
+               ax,
+               predictions: Dict[str, Dict[str, List[float]]],
+               seq_len: int,
+               mode: str) -> str:
+    """
+    Plot stock price
+    :param symbol: Target symbol
+    :param ax: Axis
+    :param predictions: Dictionary of 10 lists of inferring train/test predictions
+    :param seq_len: Sequence length
+    :param mode: Train or test
+    :return: String of MSE, MAE, and MAPE
+    """
+    stock_data = pd.read_csv(f'original_data/{mode}/{symbol}.csv',
+                             delimiter=',',
+                             usecols=['Open', 'High', 'Low', 'Close', 'Volume'])
+    ax.set_title(f'{"Training" if mode == "train" else "Testing"} Data')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Closing Returns')
+    ax.plot(stock_data['Close'], label='Closing Returns')
+    predictions[symbol][f'{mode}'] = np.add(predictions[symbol][f'{mode}'], 1.0)
+    original_data = np.array(stock_data['Close'][-len(predictions[symbol][f'{mode}']) - 1:-1].values.tolist())
+    predicted = np.multiply(original_data, predictions[symbol][f'{mode}'])
+    ax.plot(range(seq_len, len(predicted) + seq_len),
+            predicted,
+            label='Predicted Closing Returns')
+    ax.legend(loc='best')
+    del stock_data
+
+    # Print MSE, MAE, and MAPE of the given stock
+    predicted = np.array(predicted)
+    difference = original_data - predicted
+    mse = np.sum(difference ** 2) / len(predicted)
+    mae = np.sum(np.abs(difference)) / len(predicted)
+    mape = np.sum(np.abs(difference) / original_data) / len(predicted) * 100
+
+    return f'({mse:.4f}, {mae:.4f}, {mape:.4f} %)'

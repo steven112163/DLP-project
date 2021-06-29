@@ -40,7 +40,8 @@ def train_and_evaluate(model: Network,
     symbols = pd.read_csv(f'data/symbols.csv',
                           delimiter=',',
                           usecols=['Symbol'])
-    symbols, train_loader, test_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
+    symbols, train_loader, test_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size,
+                                                          seq_len=args.seq_len)
 
     # Target companies for drawing
     symbols = symbols['Symbol'][sample(range(len(train_loader)), 5)].tolist()
@@ -220,12 +221,51 @@ def inference(model: Network,
     symbols = pd.read_csv(f'data/symbols.csv',
                           delimiter=',',
                           usecols=['Symbol'])
-    symbols, _, data_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size, seq_len=args.seq_len)
+    symbols, train_loader, test_loader = get_data_loaders(symbols=symbols, batch_size=args.batch_size,
+                                                          seq_len=args.seq_len)
 
     # Target companies for drawing
-    symbols = symbols['Symbol'][sample(range(len(data_loader)), 10)].tolist()
-    predictions = {sym: [] for sym in symbols}
+    symbols = symbols['Symbol'][sample(range(len(train_loader)), 10)].tolist()
+    predictions = {sym: {'train': [], 'test': []} for sym in symbols}
 
+    # Get train predictions
+    predictions = get_inference_results(symbols=symbols,
+                                        predictions=predictions,
+                                        data_loader=train_loader,
+                                        model=model,
+                                        mode='train',
+                                        training_device=training_device)
+
+    # Get test predictions
+    predictions = get_inference_results(symbols=symbols,
+                                        predictions=predictions,
+                                        data_loader=test_loader,
+                                        model=model,
+                                        mode='test',
+                                        training_device=training_device)
+
+    # Plot
+    info_log(f'Plot predicted inferring results')
+    plot_inference_results(predictions=predictions,
+                           seq_len=args.seq_len)
+
+
+def get_inference_results(symbols: List[str],
+                          predictions: Dict[str, Dict[str, List[float]]],
+                          data_loader: StockDataloader,
+                          model: Network,
+                          mode: str,
+                          training_device: torch.device) -> Dict[str, Dict[str, List[float]]]:
+    """
+    Get inference results and return the renewed predictions
+    :param symbols: List of target symbols
+    :param predictions: Dict of train/test predictions
+    :param data_loader: Train/test data loader
+    :param model: Self attention model
+    :param mode: Train or test
+    :param training_device: Training device
+    :return: Renewed predictions
+    """
     for symbol, stock_loader in data_loader:
         if symbol in symbols:
             for batch_idx, batched_data in enumerate(stock_loader):
@@ -238,14 +278,11 @@ def inference(model: Network,
                     outputs = model.forward(inputs=sequence, symbol=symbol)
                 try:
                     outputs = outputs.view(-1).cpu().detach()
-                    predictions[symbol] += outputs.tolist()
+                    predictions[symbol][mode] += outputs.tolist()
                 except KeyError:
                     pass
 
-    # Plot
-    info_log(f'Plot predicted inferring results')
-    plot_inference_results(predictions=predictions,
-                           seq_len=args.seq_len)
+    return predictions
 
 
 def info_log(log: str) -> None:
@@ -314,7 +351,7 @@ def main() -> None:
                     dropout_rate=args.dropout_rate,
                     hidden_size=args.hidden_size).to(training_device)
     if os.path.exists('models/network.pt'):
-        checkpoint = torch.load('models/network.pt')
+        checkpoint = torch.load('models/network.pt', map_location=training_device)
         model.load_state_dict(checkpoint['network'])
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=5e-5)
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda e: min(1.0, (e + 1) / args.warmup))
